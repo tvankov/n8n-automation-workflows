@@ -8,9 +8,9 @@ I am a software developer (15+ years) retraining as a data analyst. These workfl
 
 | # | Workflow | Problem | Result |
 |---|---|---|---|
-| 01 | [Job mails collector](01-job-mails-collector/) | Job alert mails arrive daily and have to be read and copied by hand | Each alert becomes a clean Markdown file in a folder, ready for review |
-| 02 | [Request triage with anonymisation](02-request-triage-anonymisation/) | Contact requests need sorting by type and urgency, and contain personal data | Requests are classified, anonymised, answered with a route and saved with a reply draft |
-| 03 | [Job feed ETL pipeline](03-job-feed-etl-pipeline/) | A public RSS feed has about 500 job ads, with duplicates and key data hidden in HTML text | Extracted, cleaned, deduplicated and filtered to the relevant ads, saved as a CSV file every day |
+| 01 | [Job Mail Sammler: IMAP zu Markdown](01-Job-Mail-Sammler-IMAP-zu-Markdown/) | Job alert mails arrive daily and have to be read and copied by hand | Each alert becomes a clean Markdown file in a folder, ready for review |
+| 02 | [Kontaktanfragen einordnen: Webhook zu Antwort](02-Kontaktanfragen-einordnen-Webhook-zu-Antwort/) | Contact requests need sorting by type and urgency, and contain personal data | Requests are classified, anonymised, answered with a route and saved with a reply draft |
+| 03 | [ETL Stellen Pipeline: RSS Feed zu CSV](03-ETL-Stellen-Pipeline-RSS-Feed-zu-CSV/) | A public RSS feed has about 500 job ads, with duplicates and key data hidden in HTML text | Extracted, cleaned, deduplicated and filtered to the relevant ads, saved as a CSV file every day |
 
 ## How to use the files
 

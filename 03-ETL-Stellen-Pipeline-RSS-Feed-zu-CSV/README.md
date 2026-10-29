@@ -1,6 +1,6 @@
-# 03 Job feed ETL pipeline
+# 03 ETL Stellen Pipeline: RSS Feed zu CSV
 
-n8n workflow name: *ETL Stellen Pipeline: RSS Feed zu CSV*
+English: job feed ETL pipeline.
 
 ## Problem
 The public job portal service.bund.de publishes about 500 job ads in one RSS feed. Most of them are irrelevant for a data analyst, the same job often appears twice from different sources, and employer, place and deadline are buried in an HTML text block.

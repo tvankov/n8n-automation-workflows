@@ -1,6 +1,6 @@
-# 01 Job mails collector
+# 01 Job Mail Sammler: IMAP zu Markdown
 
-n8n workflow name: *Job Mail Sammler: IMAP zu Markdown*
+English: job mails collector.
 
 ## Problem
 Job alert mails from a job board arrive several times a day. Reading them and copying the relevant jobs by hand costs time and is easy to forget.
@@ -17,6 +17,6 @@ An n8n workflow watches a mailbox over IMAP and only picks up mails from the job
 Every new alert is saved as `YYYY-MM-DD_HHMMSS_source_subject.md` in an inbox folder and can be reviewed in one place.
 
 ## Notes
-- Credentials (mailbox login) are not included in `job-mails-collector.json`. Connect your own IMAP account.
+- Credentials (mailbox login) are not included in `01-Job-Mail-Sammler-IMAP-zu-Markdown.json`. Connect your own IMAP account.
 - File access is restricted to the inbox folder with the environment variable `N8N_RESTRICT_FILE_ACCESS_TO`.
 - Mails from some sources contain only a link, not the job text. Those are skipped from the filter.
