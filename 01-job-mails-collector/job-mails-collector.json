@@ -1,5 +1,5 @@
 {
-  "name": "Job-Mails sammeln",
+  "name": "Job Mail Sammler: IMAP zu Markdown",
   "nodes": [
     {
       "parameters": {

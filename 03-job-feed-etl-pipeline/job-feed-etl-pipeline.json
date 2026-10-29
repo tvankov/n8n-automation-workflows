@@ -1,0 +1,182 @@
+{
+  "name": "ETL Stellen Pipeline: RSS Feed zu CSV",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://www.service.bund.de/Content/Globals/Functions/RSSFeed/RSSGenerator_Stellen.xml?nn=4642046&type=0",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "df23d567-35ee-4ff7-af4d-7a8031814de0",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = (t) => (t || '')\n  .replace(/<[^>]*>/g, ' ')\n  .replace(/&#(\\d+);/g, (_, n) => String.fromCharCode(Number(n)))\n  .replace(/&amp;/g, '&')\n  .replace(/\\s+/g, ' ')\n  .trim();\n\nconst suche = /daten|data|analyst|statist|business intelligence|power bi|\\bbi\\b|sql|python|digitalisier|software/i;\nconst ausschluss = /senior|praktik|trainee|professur|labor|molekular|chemi/i;\nconst gesehen = new Set();\nconst ergebnis = [];\n\nfor (const item of $input.all()) {\n  const j = item.json;\n  const inhalt = text(j.content || j.contentSnippet);\n  const nimm = (muster) => { const m = inhalt.match(muster); return m ? m[1].trim() : ''; };\n  const titel = text(j.title);\n  const arbeitgeber = nimm(/Arbeitgeber:\\s*(.*?)\\s*Ort:/);\n\n  const schluessel = (titel + '|' + arbeitgeber).toLowerCase();\n  if (gesehen.has(schluessel)) continue;\n  gesehen.add(schluessel);\n\n  ergebnis.push({ json: {\n    titel,\n    arbeitgeber,\n    ort: nimm(/Ort:\\s*(.*?)\\s*Bewerbungsfrist:/),\n    bewerbungsfrist: nimm(/Bewerbungsfrist:\\s*(\\d{2}\\.\\d{2}\\.\\d{4})/),\n    veroeffentlicht: j.isoDate || j.pubDate || '',\n    link: (j.link || '').split('#')[0],\n    treffer: suche.test(titel) && !ausschluss.test(titel),\n  }});\n}\n\nreturn ergebnis;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "775f6dd0-ae20-47db-8da7-e283997f6dbb",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9cce88fd-69f8-402e-92d7-a0cddee42bfc",
+              "leftValue": "={{ $json.treffer }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        0
+      ],
+      "id": "deeac696-9f2e-4c1f-9575-5fcffda19b65",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        0
+      ],
+      "id": "befce4a2-2563-41e1-840d-60cb52071165",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=C:/n8n-data/jobs/stellen_{{ $now.format('yyyy-MM-dd_HHmm') }}.csv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "517a1730-e27f-414f-b095-e2266332000b",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -32,
+        0
+      ],
+      "id": "237b5c14-d80e-4951-997b-2b99b6ca7eb4",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "Europe/Berlin",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "nodeGroups": [],
+  "tags": []
+}

@@ -1,5 +1,7 @@
 # 01 Job mails collector
 
+n8n workflow name: *Job Mail Sammler: IMAP zu Markdown*
+
 ## Problem
 Job alert mails from a job board arrive several times a day. Reading them and copying the relevant jobs by hand costs time and is easy to forget.
 
