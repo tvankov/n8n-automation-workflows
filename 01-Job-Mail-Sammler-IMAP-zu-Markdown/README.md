@@ -2,6 +2,8 @@
 
 English: job mails collector.
 
+![Workflow screenshot](01-Job-Mail-Sammler-IMAP-zu-Markdown.png)
+
 ## Problem
 Job alert mails from a job board arrive several times a day. Reading them and copying the relevant jobs by hand costs time and is easy to forget.
 

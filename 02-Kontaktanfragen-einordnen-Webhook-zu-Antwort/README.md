@@ -2,6 +2,8 @@
 
 English: request triage with anonymisation.
 
+![Workflow screenshot](02-Kontaktanfragen-einordnen-Webhook-zu-Antwort.png)
+
 ## Problem
 Contact requests need to be sorted by type and urgency, and answered in a sensible order. They also contain personal data (names, e-mail addresses, phone numbers) that downstream steps do not need to see.
 
