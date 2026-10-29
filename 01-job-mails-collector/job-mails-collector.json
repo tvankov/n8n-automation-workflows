@@ -1,0 +1,83 @@
+{
+  "name": "Job-Mails sammeln",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "customEmailConfig": "[\"UNSEEN\", [\"FROM\", \"info@jobagent.stepstone.de\"]]"
+        }
+      },
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "d9c92e7f-4013-4833-8281-0d778dbe42c4",
+      "name": "Email Trigger (IMAP)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const repair = s => /[\\u00C2\\u00C3\\u00E2][\\u0080-\\u00BF]/.test(s) ? Buffer.from(s, 'latin1').toString('utf8') : s;\n\nfunction htmlZuText(html) {\n  return String(html || '')\n    .replace(/<(style|script)[\\s\\S]*?<\\/\\1>/gi, ' ')\n    .replace(/<!--[\\s\\S]*?-->/g, ' ')\n    .replace(/<a\\b[^>]*?href=\"([^\"]+)\"[^>]*>([\\s\\S]*?)<\\/a>/gi, (z, url, text) => {\n      const t = text.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim();\n      return t ? ` ${t} (${url}) ` : ` ${url} `;\n    })\n    .replace(/<(br|\\/p|\\/div|\\/tr|\\/h\\d|\\/li)[^>]*>/gi, '\\n')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>').replace(/&quot;/g, '\"').replace(/&#39;/g, \"'\")\n    .replace(/[ \\t]+/g, ' ')\n    .replace(/ *\\n */g, '\\n')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n}\n\nconst out = [];\nfor (const item of $input.all()) {\n  const m = item.json;\n  const datum = m.date ? new Date(m.date) : new Date();\n  const tag = datum.toISOString().slice(0, 10);\n  const zeit = datum.toISOString().slice(11, 19).replace(/:/g, '');\n  const absender = String(m.from && m.from.text ? m.from.text : m.from || '').toLowerCase();\n  const quelle = absender.includes('stepstone') ? 'stepstone'\n    : (absender.includes('indeed') ? 'indeed' : 'sonstige');\n  const betreff = String(m.subject || 'ohne-betreff')\n    .replace(/[^a-zA-Z0-9äöüÄÖÜß ._-]/g, '')\n    .trim().slice(0, 60).replace(/ +/g, '-');\n  const dateiname = `${tag}_${zeit}_${quelle}_${betreff}.md`;\n  const plain = String(m.textPlain || m.text || '').trim();\n  const html = m.textHtml || m.html || m.textAsHtml || '';\n  const text = plain.length > 200 ? plain : (htmlZuText(html) || plain || '(kein Text)');\n  const inhalt = [\n    `# ${m.subject || '(ohne Betreff)'}`,\n    ``,\n    `- Von: ${m.from && m.from.text ? m.from.text : (m.from || '')}`,\n    `- Datum: ${m.date || ''}`,\n    `- Quelle: ${quelle}`,\n    ``,\n    `---`,\n    ``,\n    repair(text),\n  ].join('\\n');\n  const binary = await this.helpers.prepareBinaryData(Buffer.from(inhalt, 'utf8'), dateiname, 'text/markdown');\n  out.push({ json: { dateiname, quelle, betreff: m.subject || '' }, binary: { data: binary } });\n}\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "50cce543-bdb1-4457-9366-43c774753a1b",
+      "name": "Mail als Datei vorbereiten"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=C:/n8n-data/inbox/{{ $json.dateiname }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        0
+      ],
+      "id": "f778a195-7638-4dc1-bd01-0c6962a1f9be",
+      "name": "In Ordner Posteingang speichern"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Mail als Datei vorbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail als Datei vorbereiten": {
+      "main": [
+        [
+          {
+            "node": "In Ordner Posteingang speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "tags": []
+}

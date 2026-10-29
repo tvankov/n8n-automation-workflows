@@ -15,6 +15,6 @@ An n8n workflow watches a mailbox over IMAP and only picks up mails from the job
 Every new alert is saved as `YYYY-MM-DD_HHMMSS_source_subject.md` in an inbox folder and can be reviewed in one place.
 
 ## Notes
-- Credentials (mailbox login) are not included in `workflow.json`. Connect your own IMAP account.
+- Credentials (mailbox login) are not included in `job-mails-collector.json`. Connect your own IMAP account.
 - File access is restricted to the inbox folder with the environment variable `N8N_RESTRICT_FILE_ACCESS_TO`.
 - Mails from some sources contain only a link, not the job text. Those are skipped from the filter.

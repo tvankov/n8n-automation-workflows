@@ -13,7 +13,7 @@ I am a software developer (15+ years) retraining as a data analyst. These workfl
 
 ## How to use the files
 
-Each folder contains the exported `workflow.json`, a screenshot and a short README. In n8n: **Workflows → Import from file**. Credentials are not part of the export, so you have to connect your own mailbox or webhook settings.
+Each folder contains the exported workflow (`<folder-name>.json`), a screenshot (`<folder-name>.png`) and a short README. In n8n: **Workflows → Import from file**. Credentials are not part of the export, so you have to connect your own mailbox or webhook settings. The file path in the write node is a placeholder, set it to a folder on your machine.
 
 ## Tools
 

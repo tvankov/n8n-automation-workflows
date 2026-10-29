@@ -1,0 +1,278 @@
+{
+  "name": "Alltagshelfer: Anfragen einordnen",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "55cbb11a-b77c-4dee-bcd6-4237794f0cab",
+              "leftValue": "={{ $json.dringlichkeit }}",
+              "rightValue": "hoch",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        752,
+        -128
+      ],
+      "id": "cc3d262c-5bdd-40d0-96c4-071b7747f497",
+      "name": "Dringend?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d510396a-c424-42ea-8427-ba83ced4b1aa",
+              "name": "route",
+              "value": "Innerhalb von 2 Tagen antworten.",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        992,
+        -32
+      ],
+      "id": "ade934da-3a2d-47a6-98ba-9a7e38ccb75d",
+      "name": "Route: normal"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1216,
+        -128
+      ],
+      "id": "37853a6e-c81e-4239-a125-be8361c3d45a",
+      "name": "Antwort senden"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kontakt",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://todorvankov.com"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        64,
+        0
+      ],
+      "id": "f1ce2f95-448b-456a-9089-9794832b82a1",
+      "name": "Webhook - Kontaktformular todorvankov.com"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e33ed7f2-fcc3-452a-b480-80af08571d37",
+              "name": "route",
+              "value": "Heute persönlich antworten (Jobangebot oder Recruiter)",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        992,
+        -240
+      ],
+      "id": "eb38ecca-da7f-42b3-a248-aa0c31fc870e",
+      "name": "Route: sofort"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  const d = item.json;\n  const maske = t => String(t || '')\n    .replace(/[\\w.+-]+@[\\w-]+(\\.[\\w-]+)+/g, '[E-MAIL]')\n    .replace(/\\+?\\d[\\d\\s\\/().-]{6,}\\d/g, '[TELEFON]');\n  const initialen = String(d.name || '').split(/\\s+/).filter(Boolean)\n    .map(w => w[0].toUpperCase() + '.').join(' ');\n  return { json: { ...d, name: initialen, email: '[E-MAIL]', nachricht: maske(d.nachricht) } };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        0
+      ],
+      "id": "732512b8-2fe0-4b4b-911b-699e45c8bea9",
+      "name": "Daten anonymisieren"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ordnet eine Kontaktanfrage von todorvankov.com ein.\n// Erwartet im Body: name, email, nachricht (auch message oder text)\nconst eingang = $input.first().json;\nconst body = eingang.body || eingang;\nconst name = body.name || body.Name || 'unbekannt';\nconst email = body.email || body.Email || body['e-mail'] || '';\nconst nachricht = String(body.nachricht || body.message || body.text || '').trim();\nconst text = nachricht.toLowerCase();\n\nconst arten = [\n  ['Jobangebot', ['stelle', 'position', 'bewerbung', 'recruit', 'karriere', 'vakanz', 'job', 'festanstellung', 'vorstellungsgespräch', 'vorstellungsgespraech']],\n  ['Projektanfrage', ['projekt', 'auftrag', 'angebot', 'freelance', 'freiberuf', 'zusammenarbeit', 'honorar']],\n  ['Frage zu Tools', ['maxscript', 'plugin', 'download', 'python', 'job search tool', 'pdf tool', 'script', 'tutorial']],\n];\n\nlet art = 'Sonstiges';\nfor (const [name_, woerter] of arten) {\n  if (woerter.some(w => text.includes(w))) { art = name_; break; }\n}\n\n// Spam: viele Links oder typische Spam-Wörter\nconst links = (text.match(/https?:\\/\\//g) || []).length;\nif (links >= 2 || ['casino', 'bitcoin', 'crypto', 'viagra', 'seo-', 'backlink', 'gewinn'].some(w => text.includes(w))) {\n  art = 'Spam';\n}\n\nlet dringlichkeit = 'normal';\nif (art === 'Jobangebot') dringlichkeit = 'hoch';\nelse if (art === 'Projektanfrage') dringlichkeit = 'mittel';\nelse if (art === 'Spam') dringlichkeit = 'keine';\n\nreturn [{\n  json: {\n    name,\n    email,\n    nachricht,\n    art,\n    dringlichkeit,\n    eingegangen: new Date().toISOString(),\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        0
+      ],
+      "id": "e7804ae6-ed7b-4ddd-b402-2ac810afae16",
+      "name": "Anfrage Dringlichkeit"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst zeit = d.eingegangen.slice(0, 19).replace(/:/g, '-').replace('T', '_');\nconst dateiname = `${zeit}_${d.art.replace(/\\s+/g, '-')}.md`;\n\nconst gruss = '\\n\\nFreundliche Grüße\\nTodor Vankov';\nconst entwuerfe = {\n  'Jobangebot': 'Guten Tag,\\n\\nvielen Dank für Ihre Nachricht und Ihr Interesse. Gern spreche ich mit Ihnen über die Stelle. Bitte schicken Sie mir die Stellenbeschreibung und nennen Sie mir zwei mögliche Termine für ein kurzes Telefonat.' + gruss,\n  'Projektanfrage': 'Guten Tag,\\n\\nvielen Dank für Ihre Anfrage. Damit ich einschätzen kann, ob ich helfen kann, beschreiben Sie mir bitte kurz das Ziel des Projekts, den Zeitrahmen und die vorhandenen Daten oder Systeme.' + gruss,\n  'Frage zu Tools': 'Guten Tag,\\n\\nvielen Dank für Ihre Frage. Ich antworte Ihnen gern dazu. Können Sie mir kurz sagen, wofür Sie das Werkzeug einsetzen möchten?' + gruss,\n  'Sonstiges': 'Guten Tag,\\n\\nvielen Dank für Ihre Nachricht. Ich melde mich in den nächsten zwei Tagen bei Ihnen.' + gruss,\n  'Spam': ''\n};\nconst entwurf = (d.art in entwuerfe ? entwuerfe[d.art] : entwuerfe['Sonstiges']) || 'Keine Antwort nötig (Spam).';\n\nconst text = `# Anfrage: ${d.art}\\n\\n- Eingegangen: ${d.eingegangen}\\n- Dringlichkeit: ${d.dringlichkeit}\\n- Name: ${d.name}\\n\\n${d.nachricht}\\n\\n## Antwort-Entwurf (bitte prüfen, nicht automatisch senden)\\n\\n${entwurf}\\n`;\n\nreturn [{\n  json: { dateiname },\n  binary: { data: await this.helpers.prepareBinaryData(Buffer.from(text, 'utf8'), dateiname, 'text/markdown') }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        176
+      ],
+      "id": "50fb995a-e246-43f5-8dfc-99d4af7ae9f8",
+      "name": "Anfrage als Datei"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=C:/n8n-data/requests/{{ $json.dateiname }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        928,
+        176
+      ],
+      "id": "9acdadb3-3519-4111-9bea-9037ee9a8ff3",
+      "name": "Datei Speichern"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Dringend?": {
+      "main": [
+        [
+          {
+            "node": "Route: sofort",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route: normal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route: normal": {
+      "main": [
+        [
+          {
+            "node": "Antwort senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Kontaktformular todorvankov.com": {
+      "main": [
+        [
+          {
+            "node": "Anfrage Dringlichkeit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route: sofort": {
+      "main": [
+        [
+          {
+            "node": "Antwort senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daten anonymisieren": {
+      "main": [
+        [
+          {
+            "node": "Anfrage als Datei",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Dringend?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anfrage Dringlichkeit": {
+      "main": [
+        [
+          {
+            "node": "Daten anonymisieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anfrage als Datei": {
+      "main": [
+        [
+          {
+            "node": "Datei Speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Datei Speichern": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "tags": []
+}
